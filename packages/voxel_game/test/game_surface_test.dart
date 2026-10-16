@@ -1,7 +1,39 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pointer_lock/pointer_lock.dart';
 import 'package:voxel_game/voxel_game.dart';
+
+final class _FakePointerLockPlatform extends PointerLockPlatform {
+  final StreamController<CaptureState> _states = StreamController<CaptureState>.broadcast(sync: true);
+  bool allowCapture = true;
+  int captureCalls = 0;
+
+  @override
+  bool get isSupported => true;
+
+  @override
+  Stream<Offset> get deltas => const Stream.empty();
+
+  @override
+  Stream<CaptureState> get stateChanges => _states.stream;
+
+  @override
+  Future<void> capture() async {
+    captureCalls++;
+    if (allowCapture) _states.add(CaptureState.captured);
+  }
+
+  @override
+  Future<void> release() async {
+    _states.add(CaptureState.released);
+  }
+
+  @override
+  Future<void> reset() async {}
+}
 
 const _spec = VoxelGameSpec(
   blocks: [
@@ -102,6 +134,66 @@ void main() {
     expect(input.down(VoxelAction.moveForward), isTrue);
     await tester.sendKeyUpEvent(LogicalKeyboardKey.keyW);
     expect(input.down(VoxelAction.moveForward), isFalse);
+    game.dispose();
+  });
+
+  testWidgets('when a browser refuses pointer lock on screen close, the next click or key re-captures it', (
+    tester,
+  ) async {
+    final originalPlatform = PointerLockPlatform.instance;
+    final fakeLock = _FakePointerLockPlatform();
+    await tester.runAsync(PointerLock.disposeInstance);
+    PointerLockPlatform.instance = fakeLock;
+    addTearDown(() async {
+      await tester.runAsync(PointerLock.disposeInstance);
+      PointerLockPlatform.instance = originalPlatform;
+    });
+
+    final game = await start(tester);
+    final input = game.input..attachDevices();
+
+    // First click captures pointer lock.
+    await tester.tapAt(const Offset(100, 100));
+    await tester.pump();
+    expect(input.wantCapture, isTrue);
+    expect(input.isCaptured, isTrue);
+
+    // Opening the pause screen releases pointer lock.
+    game.openScreen(const PauseScreen());
+    await tester.pump();
+    expect(input.isCaptured, isFalse);
+
+    // Closing the pause screen via Escape attempts capture, which the browser
+    // refuses outside a user activation gesture.
+    fakeLock.allowCapture = false;
+    game.closeScreen();
+    await tester.pump();
+    expect(input.wantCapture, isTrue);
+    expect(input.isCaptured, isFalse);
+
+    // Clicking the world re-requests pointer lock and does not attack/use.
+    fakeLock.allowCapture = true;
+    await tester.tapAt(const Offset(100, 100));
+    await tester.pump();
+    expect(input.isCaptured, isTrue);
+    expect(input.justPressed(VoxelAction.use), isFalse);
+    expect(input.justPressed(VoxelAction.attack), isFalse);
+
+    // If refused again on screen close, pressing a gameplay key also re-captures.
+    game.openScreen(const PauseScreen());
+    await tester.pump();
+    fakeLock.allowCapture = false;
+    game.closeScreen();
+    await tester.pump();
+    expect(input.isCaptured, isFalse);
+
+    fakeLock.allowCapture = true;
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.keyW);
+    await tester.pump();
+    expect(input.isCaptured, isTrue);
+    expect(input.down(VoxelAction.moveForward), isTrue);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.keyW);
+
     game.dispose();
   });
 }

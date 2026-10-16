@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:gamepads/gamepads.dart';
 
 import '../core/voxel_game.dart';
@@ -133,6 +134,13 @@ class _GameSurfaceState extends State<GameSurface> {
       input.lastDevice = InputDevice.keyboardMouse;
       return KeyEventResult.handled;
     }
+    if (widget.game.screen.value == null &&
+        input.wantCapture &&
+        !input.isCaptured &&
+        event is KeyDownEvent &&
+        event.physicalKey != PhysicalKeyboardKey.escape) {
+      input.capture();
+    }
     return input.onKey(node, event);
   }
 
@@ -141,7 +149,7 @@ class _GameSurfaceState extends State<GameSurface> {
     // A press on a screen leaves the focus where the screen has it.
     if (game.screen.value != null) return;
     _focus.requestFocus();
-    if (!game.input.wantCapture) {
+    if (!game.input.isCaptured) {
       game.input.capture();
       return;
     }
