@@ -104,22 +104,9 @@ class ChunkWorkerPool implements ChunkJobs {
       return _pool.enqueueFallback((state) => state.$2.build(cx, cz, ring));
     }
 
-    final jsRing = <JSUint8Array?>[];
-    final transferArgs = <JSAny>[];
-    for (final r in ring) {
-      if (r != null) {
-        final j = r.toJS;
-        jsRing.add(j);
-        transferArgs.add(j.getProperty('buffer'.toJS) as JSAny);
-      } else {
-        jsRing.add(null);
-      }
-    }
+    final jsRing = <JSUint8Array?>[for (final r in ring) r?.toJS];
 
-    final reply = await _pool.requestJs<JSArray>(
-      ['mesh'.toJS, cx.toJS, cz.toJS, jsRing.jsify()].jsify() as JSArray,
-      transferArgs.jsify() as JSArray,
-    );
+    final reply = await _pool.requestJs<JSArray>(['mesh'.toJS, cx.toJS, cz.toJS, jsRing.jsify()].jsify() as JSArray);
 
     JSTypedArray bytes(int at) => reply.getProperty(at.toJS) as JSTypedArray;
     MeshSurface surface(int at) => MeshSurface(
