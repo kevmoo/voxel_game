@@ -61,7 +61,8 @@ jq \
 mv build/web/precache_manifest.json.tmp build/web/precache_manifest.json
 
 echo "==> Uploading Wasm sourcemaps to Firebase Crashlytics (${PROJECT_ID})..."
-GOOGLE_CLOUD_QUOTA_PROJECT="${PROJECT_ID}" dart run web_crashlytics:upload_sourcemaps build/web \
+GOOGLE_CLOUD_QUOTA_PROJECT="${PROJECT_ID}" dart --packages=.dart_tool/package_config.json \
+  ../../../../fog/web_crashlytics.dart/web_crashlytics/bin/upload_sourcemaps.dart build/web \
   --project "${PROJECT_ID}" \
   --app "${APP_ID}" \
   --app-version "${APP_VERSION}"
