@@ -88,20 +88,53 @@ class CompiledApp {
 
     // Imports
     const dart2wasm = {
-            AB: x0 => new Uint8ClampedArray(x0),
-      AC: (o, i) => o[i],
+            AB: o => {
+        if (o === null || o === undefined) return 0;
+        if (o instanceof Float64Array) return 1;
+        return 2;
+      },
+      AC: (wasmFunction,f) => finalizeWrapper(f, function(x0,x1) { return wasmFunction(f,arguments.length,x0,x1) }),
       B: s => printToConsole(s),
-      BB: x0 => new Int16Array(x0),
-      BC: o => o.length,
+      BB: Function.prototype.call.bind(DataView.prototype.setFloat64),
+      BC: (p, s, f) => p.then(s, (e) => f(e, e === undefined)),
       C: Function.prototype.call.bind(Number.prototype.toString),
-      CB: x0 => new Uint16Array(x0),
-      CC: o => {
+      CB: (t, s) => t.set(s),
+      CC: (c) =>
+      queueMicrotask(() => dartInstance.exports.$invokeCallback(c)),
+      D: Function.prototype.call.bind(BigInt.prototype.toString),
+      DB: Function.prototype.call.bind(DataView.prototype.setFloat32),
+      DC: o => o,
+      E: (exn) => {
+        let stackString = exn.toString();
+        let frames = stackString.split('\n');
+        let drop = 4;
+        if (frames[0].startsWith('Error')) {
+            drop += 1;
+        }
+        return frames.slice(drop).join('\n');
+      },
+      EB: Function.prototype.call.bind(DataView.prototype.getFloat32),
+      EC: (o, i) => o[i],
+      F: () => new Error().stack,
+      FB: o => {
+        if (o === null || o === undefined) return 0;
+        if (o instanceof Float32Array) return 1;
+        return 2;
+      },
+      FC: o => o.length,
+      G: s => JSON.stringify(s),
+      GB: Function.prototype.call.bind(DataView.prototype.getUint32),
+      GC: o => {
         const proto = Object.getPrototypeOf(o);
         return proto === Object.prototype || proto === null;
       },
-      D: Function.prototype.call.bind(BigInt.prototype.toString),
-      DB: x0 => new Uint32Array(x0),
-      DC: o => {
+      H: Function.prototype.call.bind(Number.prototype.toString),
+      HB: o => {
+        if (o === null || o === undefined) return 0;
+        if (o instanceof Uint32Array) return 1;
+        return 2;
+      },
+      HC: o => {
         if (o === undefined) return 1;
         var type = typeof o;
         if (type === 'boolean') return 2;
@@ -129,184 +162,151 @@ class CompiledApp {
         if (o instanceof Promise) return 18;
         return 19;
       },
-      E: (exn) => {
-        let stackString = exn.toString();
-        let frames = stackString.split('\n');
-        let drop = 4;
-        if (frames[0].startsWith('Error')) {
-            drop += 1;
-        }
-        return frames.slice(drop).join('\n');
-      },
-      EB: x0 => new Float64Array(x0),
-      EC: o => {
+      I: Function.prototype.call.bind(String.prototype.indexOf),
+      IB: Function.prototype.call.bind(DataView.prototype.getInt32),
+      IC: o => {
         if (o === undefined || o === null) return 0;
         if (typeof o === 'boolean') return 1;
         return 2;
       },
-      F: () => new Error().stack,
-      FB: (jsArray, jsArrayOffset, wasmArray, wasmArrayOffset, length) => {
-        const getValue = dartInstance.exports.$wasmF64ArrayGet;
-        for (let i = 0; i < length; i++) {
-          jsArray[jsArrayOffset + i] = getValue(wasmArray, wasmArrayOffset + i);
-        }
+      J: (s, p, i) => s.lastIndexOf(p, i),
+      JB: o => {
+        if (o === null || o === undefined) return 0;
+        if (o instanceof Int32Array) return 1;
+        return 2;
       },
-      FC: (o, t) => typeof o === t,
-      G: s => JSON.stringify(s),
-      GB: x0 => new ArrayBuffer(x0),
-      GC: (o, p) => o[p],
-      H: Function.prototype.call.bind(Number.prototype.toString),
-      HB: (x0,x1,x2) => new Uint8Array(x0,x1,x2),
-      HC: x0 => x0.data,
-      I: Function.prototype.call.bind(String.prototype.indexOf),
-      IB: (x0,x1,x2) => new DataView(x0,x1,x2),
-      IC: () => globalThis,
-      J: (exn) => {
+      K: (exn) => {
         if (exn instanceof Error) {
           return exn.stack;
         } else {
           return null;
         }
       },
-      JB: (o, p) => o[p],
-      K: o => String(o),
-      KB: (b, o) => new DataView(b, o),
-      L: o => o === undefined,
-      LB: (b, o, l) => new DataView(b, o, l),
-      M: (wasmFunction,f) => finalizeWrapper(f, function(x0) { return wasmFunction(f,arguments.length,x0) }),
-      MB: x0 => new Array(x0),
-      N: (x0,x1) => x0.postMessage(x1),
-      NB: (x0,x1,x2) => { x0[x1] = x2 },
-      O: (x0,x1) => { x0.onmessage = x1 },
-      OB: Function.prototype.call.bind(DataView.prototype.setUint8),
-      P: (x0,x1,x2) => x0.postMessage(x1,x2),
-      PB: o => o.byteOffset,
-      Q: Function.prototype.call.bind(DataView.prototype.getUint8),
-      QB: Function.prototype.call.bind(DataView.prototype.setFloat64),
-      R: Function.prototype.call.bind(DataView.prototype.getFloat32),
-      RB: Function.prototype.call.bind(DataView.prototype.getFloat64),
-      S: () => typeof dartUseDateNowForTicks !== "undefined",
-      SB: o => {
-        if (o === null || o === undefined) return 0;
-        if (o instanceof Float64Array) return 1;
-        return 2;
-      },
-      T: () => Date.now(),
-      TB: Function.prototype.call.bind(DataView.prototype.setUint32),
-      U: () => 1000 * performance.now(),
-      UB: Function.prototype.call.bind(DataView.prototype.getUint32),
-      V: (l, r) => l === r,
-      VB: o => {
-        if (o === null || o === undefined) return 0;
-        if (o instanceof Uint32Array) return 1;
-        return 2;
-      },
-      W: (jsArray, jsArrayOffset, wasmArray, wasmArrayOffset, length) => {
-        const setValue = dartInstance.exports.$wasmI8ArraySet;
-        for (let i = 0; i < length; i++) {
-          setValue(wasmArray, wasmArrayOffset + i, jsArray[jsArrayOffset + i]);
-        }
-      },
-      WB: Function.prototype.call.bind(DataView.prototype.setUint16),
-      X: (o, start, length) => new Uint8Array(o.buffer, o.byteOffset + start, length),
-      XB: Function.prototype.call.bind(DataView.prototype.getUint16),
-      Y: (a, i) => a[i],
-      YB: o => o instanceof Uint16Array,
-      Z: a => a.length,
-      ZB: Function.prototype.call.bind(DataView.prototype.setInt16),
-      a: o => o instanceof Array,
-      aB: Function.prototype.call.bind(DataView.prototype.getInt16),
-      b: x0 => new Int32Array(x0),
-      bB: o => o instanceof Int16Array,
-      c: (jsArray, jsArrayOffset, wasmArray, wasmArrayOffset, length) => {
-        const getValue = dartInstance.exports.$wasmI32ArrayGet;
-        for (let i = 0; i < length; i++) {
-          jsArray[jsArrayOffset + i] = getValue(wasmArray, wasmArrayOffset + i);
-        }
-      },
-      cB: o => o instanceof Uint8ClampedArray,
-      d: (t, s) => t.set(s),
-      dB: Function.prototype.call.bind(DataView.prototype.setInt8),
-      e: (o) => new DataView(o.buffer, o.byteOffset, o.byteLength),
-      eB: Function.prototype.call.bind(DataView.prototype.getInt8),
-      f: Function.prototype.call.bind(Object.getOwnPropertyDescriptor(DataView.prototype, 'byteLength').get),
-      fB: o => {
-        if (o === null || o === undefined) return 0;
-        if (o instanceof Int8Array) return 1;
-        return 2;
-      },
-      g: Function.prototype.call.bind(DataView.prototype.setInt32),
-      gB: (o, start, length) => new Float64Array(o.buffer, o.byteOffset + start, length),
-      h: (o, start, length) => new Int32Array(o.buffer, o.byteOffset + start, length),
-      hB: (o, start, length) => new Float32Array(o.buffer, o.byteOffset + start, length),
-      i: o => o.buffer,
-      iB: (o, start, length) => new Uint32Array(o.buffer, o.byteOffset + start, length),
-      j: Function.prototype.call.bind(DataView.prototype.getInt32),
-      jB: (o, start, length) => new Uint16Array(o.buffer, o.byteOffset + start, length),
-      k: o => {
-        if (o === null || o === undefined) return 0;
-        if (o instanceof Int32Array) return 1;
-        return 2;
-      },
-      kB: (o, start, length) => new Int16Array(o.buffer, o.byteOffset + start, length),
-      l: o => o,
-      lB: (o, start, length) => new Uint8ClampedArray(o.buffer, o.byteOffset + start, length),
-      m: x0 => new Float32Array(x0),
-      mB: (o, start, length) => new Int8Array(o.buffer, o.byteOffset + start, length),
-      n: (jsArray, jsArrayOffset, wasmArray, wasmArrayOffset, length) => {
-        const getValue = dartInstance.exports.$wasmF32ArrayGet;
-        for (let i = 0; i < length; i++) {
-          jsArray[jsArrayOffset + i] = getValue(wasmArray, wasmArrayOffset + i);
-        }
-      },
-      nB: b => !!b,
-      o: x0 => x0.length,
-      oB: o => {
+      KB: Function.prototype.call.bind(DataView.prototype.getUint16),
+      L: o => String(o),
+      LB: o => o instanceof Uint16Array,
+      M: o => o === undefined,
+      MB: Function.prototype.call.bind(DataView.prototype.getInt16),
+      N: (wasmFunction,f) => finalizeWrapper(f, function(x0) { return wasmFunction(f,arguments.length,x0) }),
+      NB: o => o instanceof Int16Array,
+      O: (x0,x1) => x0.postMessage(x1),
+      OB: o => o instanceof Uint8ClampedArray,
+      P: (x0,x1) => { x0.onmessage = x1 },
+      PB: o => {
         if (o === null || o === undefined) return 0;
         if (o instanceof Uint8Array) return 1;
         return 2;
       },
-      p: o => o,
-      pB: Function.prototype.call.bind(DataView.prototype.setFloat32),
-      q: o => {
+      Q: (x0,x1,x2) => x0.postMessage(x1,x2),
+      QB: Function.prototype.call.bind(DataView.prototype.setInt32),
+      R: () => ({}),
+      RB: Function.prototype.call.bind(DataView.prototype.setUint32),
+      S: (o, p, v) => o[p] = v,
+      SB: Function.prototype.call.bind(DataView.prototype.setInt16),
+      T: () => [],
+      TB: Function.prototype.call.bind(DataView.prototype.setUint16),
+      U: (a, i) => a.push(i),
+      UB: Function.prototype.call.bind(DataView.prototype.setUint8),
+      V: x0 => x0.random(),
+      VB: Function.prototype.call.bind(DataView.prototype.setInt8),
+      W: o => o,
+      WB: Function.prototype.call.bind(DataView.prototype.getInt8),
+      X: o => {
         if (o === undefined || o === null) return 0;
         if (typeof o === 'number') return 1;
         return 2;
       },
-      qB: o => {
+      XB: o => {
         if (o === null || o === undefined) return 0;
-        if (o instanceof Float32Array) return 1;
+        if (o instanceof Int8Array) return 1;
         return 2;
       },
-      r: x0 => new Uint8Array(x0),
-      rB: o => Object.keys(o),
-      s: (jsArray, jsArrayOffset, wasmArray, wasmArrayOffset, length) => {
+      Y: () => globalThis.Math,
+      YB: o => o,
+      Z: x0 => new Int8Array(x0),
+      ZB: (o, start, length) => new Float64Array(o.buffer, o.byteOffset + start, length),
+      a: x0 => new Uint8Array(x0),
+      aB: (o, start, length) => new Float32Array(o.buffer, o.byteOffset + start, length),
+      b: (jsArray, jsArrayOffset, wasmArray, wasmArrayOffset, length) => {
         const getValue = dartInstance.exports.$wasmI8ArrayGet;
         for (let i = 0; i < length; i++) {
           jsArray[jsArrayOffset + i] = getValue(wasmArray, wasmArrayOffset + i);
         }
       },
-      sB: f => f.dartFunction,
-      t: x0 => x0.random(),
-      tB: o => typeof o === 'function' && o[jsWrappedDartFunctionSymbol] === true,
-      u: () => globalThis.Math,
-      uB: (wasmFunction,f) => finalizeWrapper(f, function(x0) { return wasmFunction(f,arguments.length,x0) }),
-      v: () => ({}),
-      vB: (wasmFunction,f) => finalizeWrapper(f, function(x0,x1) { return wasmFunction(f,arguments.length,x0,x1) }),
-      w: (o, p, v) => o[p] = v,
-      wB: (p, s, f) => p.then(s, (e) => f(e, e === undefined)),
-      x: () => [],
-      xB: (c) =>
-      queueMicrotask(() => dartInstance.exports.$invokeCallback(c)),
-      y: (a, i) => a.push(i),
-      yB: (s, p, i) => s.lastIndexOf(p, i),
-      z: x0 => new Int8Array(x0),
-      zB: o => o,
+      bB: (o, start, length) => new Uint32Array(o.buffer, o.byteOffset + start, length),
+      c: x0 => new Uint8ClampedArray(x0),
+      cB: (o, start, length) => new Int32Array(o.buffer, o.byteOffset + start, length),
+      d: x0 => new Int16Array(x0),
+      dB: (o, start, length) => new Uint16Array(o.buffer, o.byteOffset + start, length),
+      e: x0 => new Uint16Array(x0),
+      eB: (o, start, length) => new Int16Array(o.buffer, o.byteOffset + start, length),
+      f: x0 => new Int32Array(x0),
+      fB: (o, start, length) => new Uint8ClampedArray(o.buffer, o.byteOffset + start, length),
+      g: (jsArray, jsArrayOffset, wasmArray, wasmArrayOffset, length) => {
+        const getValue = dartInstance.exports.$wasmI32ArrayGet;
+        for (let i = 0; i < length; i++) {
+          jsArray[jsArrayOffset + i] = getValue(wasmArray, wasmArrayOffset + i);
+        }
+      },
+      gB: (o, start, length) => new Uint8Array(o.buffer, o.byteOffset + start, length),
+      h: x0 => new Uint32Array(x0),
+      hB: (o, start, length) => new Int8Array(o.buffer, o.byteOffset + start, length),
+      i: x0 => new Float32Array(x0),
+      iB: b => !!b,
+      j: (jsArray, jsArrayOffset, wasmArray, wasmArrayOffset, length) => {
+        const getValue = dartInstance.exports.$wasmF32ArrayGet;
+        for (let i = 0; i < length; i++) {
+          jsArray[jsArrayOffset + i] = getValue(wasmArray, wasmArrayOffset + i);
+        }
+      },
+      jB: (o, t) => typeof o === t,
+      k: x0 => new Float64Array(x0),
+      kB: (o, p) => o[p],
+      l: (jsArray, jsArrayOffset, wasmArray, wasmArrayOffset, length) => {
+        const getValue = dartInstance.exports.$wasmF64ArrayGet;
+        for (let i = 0; i < length; i++) {
+          jsArray[jsArrayOffset + i] = getValue(wasmArray, wasmArrayOffset + i);
+        }
+      },
+      lB: x0 => x0.data,
+      m: x0 => new ArrayBuffer(x0),
+      mB: () => globalThis,
+      n: (x0,x1,x2) => new Uint8Array(x0,x1,x2),
+      nB: () => typeof dartUseDateNowForTicks !== "undefined",
+      o: (x0,x1,x2) => new DataView(x0,x1,x2),
+      oB: () => Date.now(),
+      p: (o, p) => o[p],
+      pB: () => 1000 * performance.now(),
+      q: x0 => new Array(x0),
+      qB: (l, r) => l === r,
+      r: (x0,x1,x2) => { x0[x1] = x2 },
+      rB: (jsArray, jsArrayOffset, wasmArray, wasmArrayOffset, length) => {
+        const setValue = dartInstance.exports.$wasmI8ArraySet;
+        for (let i = 0; i < length; i++) {
+          setValue(wasmArray, wasmArrayOffset + i, jsArray[jsArrayOffset + i]);
+        }
+      },
+      s: (o) => new DataView(o.buffer, o.byteOffset, o.byteLength),
+      sB: (a, i) => a[i],
+      t: Function.prototype.call.bind(Object.getOwnPropertyDescriptor(DataView.prototype, 'byteLength').get),
+      tB: a => a.length,
+      u: o => o.buffer,
+      uB: o => o instanceof Array,
+      v: Function.prototype.call.bind(DataView.prototype.getUint8),
+      vB: x0 => x0.length,
+      w: (b, o) => new DataView(b, o),
+      wB: o => Object.keys(o),
+      x: (b, o, l) => new DataView(b, o, l),
+      xB: f => f.dartFunction,
+      y: o => o.byteOffset,
+      yB: o => typeof o === 'function' && o[jsWrappedDartFunctionSymbol] === true,
+      z: Function.prototype.call.bind(DataView.prototype.getFloat64),
+      zB: (wasmFunction,f) => finalizeWrapper(f, function(x0) { return wasmFunction(f,arguments.length,x0) }),
 
     };
 
     const baseImports = {
-      dart2wasm: dart2wasm,
+      _: dart2wasm,
       Math: Math,
       Date: Date,
       Object: Object,

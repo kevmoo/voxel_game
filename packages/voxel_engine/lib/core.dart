@@ -22,3 +22,4 @@ export 'src/core/physics/voxel_body.dart';
 export 'src/core/physics/voxel_raycast.dart';
 export 'src/core/streaming/chunk_streamer.dart';
 export 'src/core/streaming/chunk_worker_pool.dart';
+export 'src/core/worker_pool/worker_pool.dart';
