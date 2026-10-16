@@ -174,7 +174,7 @@ class DefaultHud extends StatelessWidget {
               HudSelector(
                 frames: frames,
                 select: () => (
-                  hidden: game.input.wantCapture || game.screen.value != null,
+                  hidden: game.input.isCaptured || game.screen.value != null,
                   touch: game.input.lastDevice == InputDevice.touch,
                 ),
                 builder: (context, s) => s.hidden
