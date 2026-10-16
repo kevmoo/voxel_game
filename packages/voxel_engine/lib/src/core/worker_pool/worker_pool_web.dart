@@ -137,7 +137,8 @@ class WorkerPool<TState> {
           if (!inited.isCompleted) {
             final err = (data.getProperty(1.toJS) as JSString).toDart;
             final st = (data.getProperty(2.toJS) as JSString).toDart;
-            inited.completeError(RemoteError(err, st));
+            final remoteError = RemoteError(err, st);
+            inited.completeError(remoteError, remoteError.stackTrace);
           }
           return;
         }
@@ -154,7 +155,8 @@ class WorkerPool<TState> {
         if (err != null && !err.isUndefinedOrNull) {
           final errMsg = (err as JSString).toDart;
           final stMsg = (data.getProperty(3.toJS) as JSString).toDart;
-          c.completeError(RemoteError(errMsg, stMsg));
+          final remoteError = RemoteError(errMsg, stMsg);
+          c.completeError(remoteError, remoteError.stackTrace);
         } else {
           c.complete(result);
         }
