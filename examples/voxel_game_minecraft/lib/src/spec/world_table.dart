@@ -1,4 +1,5 @@
-import 'package:voxel_game/voxel_game.dart';
+import 'package:voxel_engine/voxel_engine.dart';
+import 'package:voxel_game/src/spec/structure_loot.dart';
 
 import '../structures/fortress.dart';
 

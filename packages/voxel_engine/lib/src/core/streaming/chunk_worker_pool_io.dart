@@ -25,7 +25,13 @@ typedef ChunkGeneratorFactory = ChunkGenerator Function();
 /// Everything a worker isolate needs to build its own generator and mesher.
 class ChunkWorkerConfig {
   /// A config sent to every worker; all of it must be sendable to an isolate.
-  ChunkWorkerConfig({required this.generator, required this.table, this.lighting = true});
+  ChunkWorkerConfig({
+    required this.generator,
+    required this.table,
+    this.lighting = true,
+    this.workerScript,
+    this.workerInitData,
+  });
 
   /// Builds each worker's generator.
   final ChunkGeneratorFactory generator;
@@ -35,6 +41,12 @@ class ChunkWorkerConfig {
 
   /// False skips the light flood in every mesher ([ChunkMesher.lighting]).
   final bool lighting;
+
+  /// The worker script. Unused on IO.
+  final String? workerScript;
+
+  /// Initialization data passed to the worker.
+  final Object? workerInitData;
 }
 
 class _Worker {

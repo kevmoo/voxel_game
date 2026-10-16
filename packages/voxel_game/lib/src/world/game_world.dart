@@ -158,6 +158,8 @@ class GameWorld implements VoxelEditor {
       ChunkWorkerConfig(
         generator: _factory([for (final g in generators.dimensions) g.spec], blocks.ids, generators.seed),
         table: blocks.table,
+        workerScript: 'worker_wrapper.js',
+        workerInitData: {'seed': generators.seed, 'ids': blocks.ids},
       ),
     );
     await pool.start();
