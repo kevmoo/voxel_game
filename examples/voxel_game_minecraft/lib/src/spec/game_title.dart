@@ -1,7 +1,7 @@
-import 'dart:io' show Platform;
-
 import 'package:flutter/widgets.dart';
 import 'package:voxel_game/voxel_game.dart';
+
+import 'platform_version.dart';
 
 /// The title the game opens on: Play (the world list), Multiplayer (host a
 /// world on 7777, or join one), Settings, the [credits] and, on a desktop,
@@ -54,7 +54,7 @@ List<String> creditsAround(List<String> stages) => [
   '',
   'Engine',
   'the voxel kit: voxel_game over voxel_scene, voxel_engine and sound_recipes',
-  'Flutter + flutter_scene 0.23 (Flutter GPU / Impeller), Dart ${Platform.version.split(' ').first}',
+  'Flutter + flutter_scene 0.23 (Flutter GPU / Impeller), Dart $dartRuntimeVersion',
   'Dart for the game, a pool of isolates for chunk generation and meshing',
   '',
   'Fonts',

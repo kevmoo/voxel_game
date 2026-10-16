@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter_scene/scene.dart';
 // The engine's own gpu shim: Material.bind is typed against it, and only it
 // resolves to the same RenderPass / Shader types for both the analyzer and the build
@@ -50,6 +51,7 @@ class TerrainMaterial extends PhysicallyBasedMaterial {
   /// compiled it.
   static Future<void> loadLibrary() async {
     if (_library != null) return;
+    if (kIsWeb || defaultTargetPlatform == TargetPlatform.linux) return;
     final lib = await gpu.loadShaderLibraryAsync(asset);
     for (final name in const ['TerrainFragment', 'TerrainVertex', 'TerrainDepthVertex']) {
       if (lib == null || lib[name] == null) {

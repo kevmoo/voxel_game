@@ -1,4 +1,3 @@
-import 'dart:isolate';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
@@ -146,15 +145,23 @@ class MusicDirector {
   void setGain(double value) {
     gain = value;
     final h = _active;
-    if (h != null && SoLoud.instance.isInitialized && SoLoud.instance.getIsValidVoiceHandle(h)) {
-      SoLoud.instance.setVolume(h, value);
-    }
+    if (h == null) return;
+    try {
+      if (SoLoud.instance.isInitialized && SoLoud.instance.getIsValidVoiceHandle(h)) {
+        SoLoud.instance.setVolume(h, value);
+      }
+    } catch (_) {}
   }
 
   /// Whether a track is a live voice on the audio device.
   bool get isPlaying {
     final h = _active;
-    return h != null && SoLoud.instance.isInitialized && SoLoud.instance.getIsValidVoiceHandle(h);
+    if (h == null) return false;
+    try {
+      return SoLoud.instance.isInitialized && SoLoud.instance.getIsValidVoiceHandle(h);
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Plays the track of [mood] (null: silence), fading the old one out.
@@ -162,8 +169,13 @@ class MusicDirector {
     if (mood == _mood) return;
     _mood = mood;
     final gen = ++_generation;
-    final soloud = SoLoud.instance;
-    if (!soloud.isInitialized) return;
+    final SoLoud soloud;
+    try {
+      soloud = SoLoud.instance;
+      if (!soloud.isInitialized) return;
+    } catch (_) {
+      return;
+    }
     final fade = Duration(milliseconds: (crossfade * 1000).toInt());
     final old = _active;
     if (old != null && soloud.getIsValidVoiceHandle(old)) {
@@ -192,7 +204,7 @@ class MusicDirector {
       if (source == null) {
         source = origin == MusicOrigin.asset
             ? await soloud.loadAsset(key, mode: LoadMode.disk)
-            : await soloud.loadMem('$mood.wav', await Isolate.run(() => renderWav(recipe!)));
+            : await soloud.loadMem('$mood.wav', await compute(renderWav, recipe!));
         _loaded[key] = source;
       }
       if (gen != _generation) return; // a newer mood won while this one loaded

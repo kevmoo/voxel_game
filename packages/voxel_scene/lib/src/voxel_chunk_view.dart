@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter_scene/scene.dart';
 import 'package:vector_math/vector_math.dart';
 import 'package:voxel_engine/core.dart';
@@ -41,17 +42,20 @@ class VoxelChunkView implements ChunkMeshSink {
     matSolid = TerrainMaterial()
       ..roughnessFactor = 1.0
       ..metallicFactor = 0.0
-      ..specular = 0.0;
+      ..specular = 0.0
+      ..vertexColorWeight = 1.0;
     matCutout = TerrainMaterial()
       ..roughnessFactor = 1.0
       ..metallicFactor = 0.0
       ..specular = 0.0
-      ..doubleSided = true;
+      ..doubleSided = true
+      ..vertexColorWeight = 1.0;
     matLiquid = TerrainMaterial()
       ..roughnessFactor = 0.15
       ..metallicFactor = 0.1
       ..alphaMode = AlphaMode.blend
-      ..doubleSided = true;
+      ..doubleSided = true
+      ..vertexColorWeight = 1.0;
     // Unlit, so a lamp's faces keep their colour at night.
     matGlow = UnlitMaterial()..vertexColorWeight = 1.0;
   }
@@ -77,6 +81,10 @@ class VoxelChunkView implements ChunkMeshSink {
   /// Microseconds [rebuild] spends a frame by default: a quarter of a 120 Hz
   /// frame.
   static const int rebuildBudgetUsec = 2000;
+
+  /// WebGL2 and Linux OpenGLES reject `VertexFormat.uint32x2` vertex streams,
+  /// so those targets build regions with standard float32 `MeshGeometry`.
+  static bool get _useFloatGeometry => kIsWeb || defaultTargetPlatform == TargetPlatform.linux;
 
   /// Each meshed chunk's surfaces.
   final Map<ChunkPos, _ViewChunk> _chunks = {};
@@ -174,11 +182,14 @@ class VoxelChunkView implements ChunkMeshSink {
 
   void _build(ChunkPos region, List<(ChunkPos, _ViewChunk)> members) {
     final watch = Stopwatch()..start();
+    final useFloat = _useFloatGeometry;
     var packed = 0;
-    for (final (_, c) in members) {
-      if (c.packed) continue;
-      packed += c.litVertexCount;
-      c.pack();
+    if (!useFloat) {
+      for (final (_, c) in members) {
+        if (c.packed) continue;
+        packed += c.litVertexCount;
+        c.pack();
+      }
     }
     final packUs = watch.elapsedMicroseconds;
     if (packed > 0) _packUsPerVertex = _meanWith(_packUsPerVertex, packUs / packed);
@@ -194,12 +205,20 @@ class VoxelChunkView implements ChunkMeshSink {
       for (final (offset, c) in members)
         if (of(c) case final packed?) (offset, packed),
     ];
-    for (final surface in [
-      _mergeLit(lit((c) => c.solid), matSolid),
-      _mergeLit(lit((c) => c.cutout), matCutout),
-      _mergeGlow([for (final (offset, c) in members) (offset, c.glow)]),
-      _mergeLit(lit((c) => c.liquid), matLiquid),
-    ]) {
+    final surfaces = useFloat
+        ? [
+            _mergeFloat([for (final (offset, c) in members) (offset, c.rawMesh.solid)], matSolid),
+            _mergeFloat([for (final (offset, c) in members) (offset, c.rawMesh.cutout)], matCutout),
+            _mergeGlow([for (final (offset, c) in members) (offset, c.glow)]),
+            _mergeFloat([for (final (offset, c) in members) (offset, c.rawMesh.liquid)], matLiquid),
+          ]
+        : [
+            _mergeLit(lit((c) => c.solid), matSolid),
+            _mergeLit(lit((c) => c.cutout), matCutout),
+            _mergeGlow([for (final (offset, c) in members) (offset, c.glow)]),
+            _mergeLit(lit((c) => c.liquid), matLiquid),
+          ];
+    for (final surface in surfaces) {
       if (surface != null) node.add(surface);
     }
     root.add(node);
@@ -229,7 +248,9 @@ class VoxelChunkView implements ChunkMeshSink {
   /// One node drawing the glow [parts] on [matGlow], or null when they are all
   /// empty. Their colour keeps each block's variation baked in, which can pass
   /// 1.0 where the packed vertex stores 0..1, so they stay in the engine's vertex.
-  Node? _mergeGlow(List<(ChunkPos, MeshSurface)> parts) {
+  Node? _mergeGlow(List<(ChunkPos, MeshSurface)> parts) => _mergeFloat(parts, matGlow);
+
+  Node? _mergeFloat(List<(ChunkPos, MeshSurface)> parts, Material material) {
     final m = MergedSurface.of(parts);
     if (m == null) return null;
     final geometry = MeshGeometry.fromArrays(
@@ -241,7 +262,7 @@ class VoxelChunkView implements ChunkMeshSink {
       bounds: _bounds(m.minY, m.maxY),
       retainCpuData: false,
     );
-    return Node(mesh: Mesh(geometry, matGlow))..shadowStatic = true;
+    return Node(mesh: Mesh(geometry, material))..shadowStatic = true;
   }
 }
 
@@ -257,6 +278,9 @@ class _ViewChunk {
 
   /// The mesh whose lit surfaces are not packed yet; null once they are.
   ChunkMeshResult? _mesh;
+
+  /// The raw unpacked mesh (retained when [_useFloatGeometry] is true).
+  ChunkMeshResult get rawMesh => _mesh!;
 
   /// Drawn in the engine's vertex, never packed.
   final MeshSurface glow;
