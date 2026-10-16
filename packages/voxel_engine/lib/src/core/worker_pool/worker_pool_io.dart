@@ -103,7 +103,8 @@ class WorkerPool<TState> {
     _owner.remove(id)?.pending--;
     if (c == null) return;
     if (list.length == 4) {
-      c.completeError(RemoteError(list[2] as String, list[3] as String));
+      final err = RemoteError(list[2] as String, list[3] as String);
+      c.completeError(err, err.stackTrace);
     } else {
       c.complete(list[1]);
     }
