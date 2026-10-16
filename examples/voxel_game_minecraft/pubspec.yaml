@@ -16,6 +16,8 @@ dependencies:
   voxel_engine: ^0.4.0-dev
   voxel_game: ^0.4.0-dev
   voxel_scene: ^0.4.0-dev
+  web_crashlytics:
+    path: ../../../../fog/web_crashlytics.dart/web_crashlytics
 
 # The kit from this tree, never pub.dev's: this app witnesses a kit change before it is
 # published (KL-006). Overrides, not path dependencies, because the kit's packages depend
