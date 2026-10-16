@@ -32,6 +32,7 @@ flutter build web \
 rm -f web/worker.wasm.map web/worker.support.js
 
 echo "==> Content-hashing worker.wasm and worker.mjs in build/web..."
+rm -f build/web/worker.*.wasm build/web/worker.*.mjs
 WASM_HASH="$(jq -r '.entries[] | select(.url == "worker.wasm") | .hash' build/web/precache_manifest.json)"
 MJS_HASH="$(jq -r '.entries[] | select(.url == "worker.mjs") | .hash' build/web/precache_manifest.json)"
 
