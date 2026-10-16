@@ -1,4 +1,5 @@
-import 'package:voxel_game/voxel_game.dart';
+import 'package:voxel_engine/worldgen.dart';
+import 'package:voxel_engine/core.dart';
 
 /// Where the parts of a fortress lie: a hall of [length] running +x from
 /// [start] at floor height [floor], centred on its site's [z]; the throne
