@@ -31,6 +31,35 @@ flutter build web \
 # Keep web/ clean in git while leaving build/web/worker.wasm.map for upload_sourcemaps.
 rm -f web/worker.wasm.map web/worker.support.js
 
+echo "==> Content-hashing worker.wasm and worker.mjs in build/web..."
+WASM_HASH="$(jq -r '.entries[] | select(.url == "worker.wasm") | .hash' build/web/precache_manifest.json)"
+MJS_HASH="$(jq -r '.entries[] | select(.url == "worker.mjs") | .hash' build/web/precache_manifest.json)"
+
+mv build/web/worker.wasm "build/web/worker.${WASM_HASH}.wasm"
+mv build/web/worker.mjs "build/web/worker.${MJS_HASH}.mjs"
+rm -f build/web/worker.dart build/web/worker.support.js
+
+sed -i \
+  -e "s|./worker.mjs|./worker.${MJS_HASH}.mjs|g" \
+  -e "s|worker.wasm|worker.${WASM_HASH}.wasm|g" \
+  build/web/worker_wrapper.js
+
+WRAPPER_SIZE="$(wc -c < build/web/worker_wrapper.js | tr -d ' ')"
+jq \
+  --arg wasmUrl "worker.${WASM_HASH}.wasm" \
+  --arg mjsUrl "worker.${MJS_HASH}.mjs" \
+  --argjson wrapperSize "${WRAPPER_SIZE}" \
+  '.entries |= (
+    map(
+      select(.url != "worker.dart" and .url != "worker.support.js")
+      | if .url == "worker.wasm" then .url = $wasmUrl | .urlHashed = true
+        elif .url == "worker.mjs" then .url = $mjsUrl | .urlHashed = true
+        elif .url == "worker_wrapper.js" then .size = $wrapperSize
+        else . end
+    )
+  )' build/web/precache_manifest.json > build/web/precache_manifest.json.tmp
+mv build/web/precache_manifest.json.tmp build/web/precache_manifest.json
+
 echo "==> Uploading Wasm sourcemaps to Firebase Crashlytics (${PROJECT_ID})..."
 GOOGLE_CLOUD_QUOTA_PROJECT="${PROJECT_ID}" dart run web_crashlytics:upload_sourcemaps build/web \
   --project "${PROJECT_ID}" \

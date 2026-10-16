@@ -27,7 +27,7 @@
         ]
       },
       {
-        "source": "**/main.dart.*.{js,wasm,mjs}",
+        "source": "**/{main.dart,worker}.*.{js,wasm,mjs}",
         "headers": [
           {
             "key": "Cache-Control",
