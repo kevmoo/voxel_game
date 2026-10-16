@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:gamepads/gamepads.dart';
 import 'package:sound_recipes/sound_recipes.dart';
 
 import '../audio/game_music.dart';
+import '../io/platform_io.dart';
 import '../settings/game_settings.dart';
 import '../settings/settings_store.dart';
 import '../spec/music_spec.dart';

@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:isolate';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter/services.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
 
@@ -203,7 +203,7 @@ class MusicDirector {
       try {
         source = origin == MusicOrigin.asset
             ? await soloud.loadAsset(key, mode: LoadMode.disk)
-            : await soloud.loadMem('$mood.wav', await Isolate.run(() => renderWav(recipe!)));
+            : await soloud.loadMem('$mood.wav', await compute(renderWav, recipe!));
       } on SoLoudNotInitializedException {
         // The device closed under the load, which its owner does only after
         // silencing the music: a newer mood has won.

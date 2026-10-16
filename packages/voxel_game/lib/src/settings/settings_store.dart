@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'dart:io';
 
+import '../io/platform_io.dart';
 import 'game_settings.dart';
 
 /// The player's [GameSettings] in one JSON [file], kept between runs:

@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:vector_math/vector_math.dart';
@@ -8,6 +7,7 @@ import 'package:voxel_engine/core.dart';
 
 import '../core/game_system.dart';
 import '../core/voxel_game.dart';
+import '../io/platform_io.dart';
 import '../player/player_spec.dart';
 import '../spec/voxel_game_spec.dart';
 import 'world_info.dart';

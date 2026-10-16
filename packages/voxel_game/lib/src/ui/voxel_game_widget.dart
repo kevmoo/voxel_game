@@ -1,8 +1,7 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:ui' show AppExitType;
 
-import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform;
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart' show SchedulerBinding, Ticker;
 import 'package:flutter/services.dart' show DeviceOrientation, ServicesBinding, SystemChrome, SystemUiMode;
@@ -13,6 +12,7 @@ import 'package:voxel_scene/voxel_scene.dart';
 
 import '../audio/game_music.dart';
 import '../core/voxel_game.dart';
+import '../io/platform_io.dart';
 import '../loop/frame_driver.dart';
 import '../settings/game_settings.dart';
 import '../settings/settings_store.dart';
@@ -79,12 +79,14 @@ Future<void> runVoxelGame(
   await SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   await VoxelGameWidget.loadResources();
-  final VoidCallback? closeApp = switch (defaultTargetPlatform) {
-    TargetPlatform.macOS ||
-    TargetPlatform.windows ||
-    TargetPlatform.linux => () => ServicesBinding.instance.exitApplication(AppExitType.required),
-    TargetPlatform.android || TargetPlatform.iOS || TargetPlatform.fuchsia => null,
-  };
+  final VoidCallback? closeApp = kIsWeb
+      ? null
+      : switch (defaultTargetPlatform) {
+          TargetPlatform.macOS ||
+          TargetPlatform.windows ||
+          TargetPlatform.linux => () => ServicesBinding.instance.exitApplication(AppExitType.required),
+          TargetPlatform.android || TargetPlatform.iOS || TargetPlatform.fuchsia => null,
+        };
   runApp(
     MaterialApp(
       title: title,
@@ -199,12 +201,13 @@ class VoxelGameWidget extends StatefulWidget {
 
   /// The app's default saves: `<application support>/worlds`.
   static Future<WorldSaves> defaultSaves() async =>
-      WorldSaves(Directory('${(await getApplicationSupportDirectory()).path}/worlds'));
+      WorldSaves(Directory(kIsWeb ? '/web/worlds' : '${(await getApplicationSupportDirectory()).path}/worlds'));
 
   /// The app's default settings: `<application support>/settings.json`,
   /// beside [defaultSaves]' folder.
-  static Future<SettingsStore> defaultSettings() async =>
-      SettingsStore(File('${(await getApplicationSupportDirectory()).path}/settings.json'));
+  static Future<SettingsStore> defaultSettings() async => SettingsStore(
+    File(kIsWeb ? '/web/settings.json' : '${(await getApplicationSupportDirectory()).path}/settings.json'),
+  );
 
   /// Loads flutter_scene's static resources and the terrain shader.
   static Future<void> loadResources() async {
@@ -246,7 +249,10 @@ class _VoxelGameWidgetState extends State<VoxelGameWidget> with SingleTickerProv
 
   Future<void> _start() async {
     final store = _settingsStore = widget.settings ?? await VoxelGameWidget.defaultSettings();
-    final settings = store.read(GameSettings.of(widget.spec));
+    final defaults = GameSettings.of(widget.spec);
+    final settings = store.read(
+      kIsWeb && defaults.renderDistance > 3 ? defaults.copyWith(renderDistance: 3) : defaults,
+    );
     final VoxelGame game;
     try {
       game = await _open(settings);
