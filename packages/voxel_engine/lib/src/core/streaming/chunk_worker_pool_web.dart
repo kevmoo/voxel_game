@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import '../grid/voxel_block_table.dart';
 import '../mesh/chunk_mesher.dart';
+import '../occlusion/chunk_visibility.dart';
 import '../worker_pool/worker_pool_web.dart';
 import 'chunk_streamer.dart';
 
@@ -124,8 +125,9 @@ class ChunkWorkerPool implements ChunkJobs {
       surface(15),
       sky: (bytes(20) as JSUint8Array).toDart,
       block: (bytes(21) as JSUint8Array).toDart,
-      aoVerts: (reply.getProperty(22.toJS) as JSNumber).toDartInt,
-      ms: (reply.getProperty(23.toJS) as JSNumber).toDartDouble,
+      visibility: ChunkVisibility((bytes(22) as JSUint16Array).toDart),
+      aoVerts: (reply.getProperty(23.toJS) as JSNumber).toDartInt,
+      ms: (reply.getProperty(24.toJS) as JSNumber).toDartDouble,
     );
   }
 
@@ -203,6 +205,7 @@ void runChunkWorker(ChunkWorkerConfig Function(JSAny? initData) init) {
 
         final sky = r.sky.toJS;
         final block = r.block.toJS;
+        final visibility = Uint16List.fromList(r.visibility.masks).toJS;
 
         final reply = [
           ...pack(r.solid).toDart,
@@ -211,11 +214,16 @@ void runChunkWorker(ChunkWorkerConfig Function(JSAny? initData) init) {
           ...pack(r.glow).toDart,
           sky,
           block,
+          visibility,
           r.aoVerts,
           r.ms,
         ];
 
-        transferArgs.addAll([sky.getProperty('buffer'.toJS) as JSAny, block.getProperty('buffer'.toJS) as JSAny]);
+        transferArgs.addAll([
+          sky.getProperty('buffer'.toJS) as JSAny,
+          block.getProperty('buffer'.toJS) as JSAny,
+          visibility.getProperty('buffer'.toJS) as JSAny,
+        ]);
 
         return (reply.jsify() as JSArray, transferArgs.jsify() as JSArray);
       });

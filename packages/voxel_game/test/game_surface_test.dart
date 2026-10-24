@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pointer_lock/pointer_lock.dart';
+import 'package:flutter3d_pointer_lock/flutter3d_pointer_lock.dart';
 import 'package:voxel_game/voxel_game.dart';
 
 final class _FakePointerLockPlatform extends PointerLockPlatform {
